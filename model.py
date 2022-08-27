@@ -57,7 +57,7 @@ class MultiDistrictModel(Model):
         return dx
 
 
-class SEIRDV(Model):
+class SEIRDV_old(Model):
     #Initialisation
     def __init__(self, r0, infect, v_rate, v_eff, asympt_infect, p_asympt, incubation, asymp_rec,
                  mild_rec, hosp_rec, icu_rec, p_asymp_mild, p_mild_hosp, p_hosp_icu, hosp_die,
@@ -117,11 +117,11 @@ class SEIRDV(Model):
         return dx
 
 
-class SEIRDV2(Model):
+class SEIRDV(Model):
     #Initialisation
     def __init__(self, r0, infect, v_rate, v_eff, asympt_infect, p_asympt, incubation, asymp_rec,
-                 mild_rec, hosp_rec, icu_rec, p_asymp_mild, p_mild_hosp, p_mild_icu, hosp_die,
-                 icu_die, population, feedback_loop=None):
+                 mild_rec, hosp_rec, icu_rec, p_mild_hosp, p_mild_icu, hosp_die,
+                 icu_die, population):
 
         self.beta_s = r0 / infect
         self.beta_v = self.beta_s * (1 - v_eff)
@@ -135,16 +135,14 @@ class SEIRDV2(Model):
         self.gamma_i3 = hosp_rec
         self.gamma_i4 = icu_rec
 
-        self.alpha_i1 = p_asymp_mild
-        self.alpha_i2 = p_mild_hosp
-        self.alpha_i3 = p_mild_icu
+        self.alpha_i23 = p_mild_hosp
+        self.alpha_i24 = p_mild_icu
 
         self.delta_i3 = hosp_die
         self.delta_i4 = icu_die
 
         self.N = population
 
-        self.mu = feedback_loop
     #Calculating the nunber of initial people in each compartment-- here only 1 person in exposed
     def init_run(self, sus_0=0, vac_0=0, exp_0=1, asymp_0=0, mild_0=0, hosp_0=0, icu_0=0, rec_0=0, die_0=0):
         sus_0 = self.N - vac_0 - exp_0 - asymp_0 - mild_0 - hosp_0 - icu_0 - rec_0 - die_0
@@ -161,18 +159,13 @@ class SEIRDV2(Model):
         dx[1] = self.upsilon * s - (self.beta_v * v * (self.rho * i1 + i2 + i3 + i4) / N)
         dx[2] = (self.beta_s * s * (self.rho * i1 + i2 + i3 + i4) / N) + \
             (self.beta_v * v * (self.rho * i1 + i2 + i3 + i4) / N) - self.sigma * e
-        dx[3] = self.p_asympt * self.sigma * e - self.gamma_i1 * i1 - self.alpha_i1 * i1
-        dx[4] = (1 - self.p_asympt) * self.sigma * e + self.alpha_i1 * i1 - \
-            self.gamma_i2 * i2 - self.alpha_i2 * i2 - self.alpha_i3 * i3
-        dx[5] = self.alpha_i2 * i2 - self.gamma_i3 * i3  - self.delta_i3 * i3
-        dx[6] = self.alpha_i3 * i3 - self.gamma_i4 * i4 - self.delta_i4 * i4
+        dx[3] = self.p_asympt * self.sigma * e - self.gamma_i1 * i1
+        dx[4] = (1 - self.p_asympt) * self.sigma * e - self.gamma_i2 * i2 - \
+                self.alpha_i23 * i2 - self.alpha_i24 * i2
+        dx[5] = self.alpha_i23 * i2 - self.gamma_i3 * i3 - self.delta_i3 * i3
+        dx[6] = self.alpha_i24 * i2 - self.gamma_i4 * i4 - self.delta_i4 * i4
         dx[7] = self.gamma_i1 * i1 + self.gamma_i2 * i2 + self.gamma_i3 * i3 + self.gamma_i4 * i4
         dx[8] = self.delta_i3 * i3 + self.delta_i4 * i4
-    #feedback loop if implemented
-        if self.mu:
-            dx[0] = dx[0] + self.mu * (r + v)
-            dx[1] = dx[1] - self.mu * v
-            dx[7] = dx[7] - self.mu * r
 
         return dx
 
