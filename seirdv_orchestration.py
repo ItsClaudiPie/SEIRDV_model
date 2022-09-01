@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from default_config import CONFIG
 from combine_runs import combine_seeds, combine_subruns
@@ -15,8 +16,9 @@ MODEL_DIR = 'wave_1_0'
 #MODEL_DIR = 'wave_4_0'
 #MODEL_DIR = 'wave_5_0'
 
-#Use a number of seeds to perform a MC algorithm 
-SEEDS = [1,2,3,4,5]
+#Use a number of seeds to perform a MC algorithm
+n_seeds = 50
+SEEDS = [i + 1 for i in range(n_seeds)]
 
 #Create a function that runs a SEIRDV model for each seed
 def run(seed):
@@ -25,17 +27,17 @@ def run(seed):
    
     # Wave 1
 
-    config['days'] = 500
+    config['days'] = 1000
     immune_percentage = 0
     config['Vaccinated'] = [immune_percentage * n for n in config['N']]
-    config['Vaccinated'] = [0,0,0,0,0]
+    config['Vaccinated'] = [0, 0, 0, 0, 0]
     config['upsilon'] = [0, 0, 0, 0, 0]
-    config["alpha_i2"] = [0.002, 0.001724137931034483, 0.0017857142857142859, 0.0014705882352941176, 0.001282051282051282]
-    config["alpha_i3"] = [0.002631578947368421, 0.0014285714285714286, 0.0029411764705882353, 0.0029411764705882353, 0.002272727272727273]
-    config["gamma_i3"] = [0.05645849085422254, 0.05059842484263016, 0.05641435245414137, 0.06750861079219289, 0.07250426453807762]
-    config["gamma_i4"] = [0.05412956016264819, 0.03598792261818881, 0.05682107718991267, 0.06997124469396139, 0.045738030687482126]
-    config["delta_i3"] = [0.035294089749680076, 0.025617013984876785, 0.03493207931373253, 0.054351487928130264, 0.0429594891135747]
-    config["delta_i4"] = [0.0414777878513146, 0.04288552603679941, 0.03355315111797479, 0.05303689814504788, 0.08517215950989847]
+    config["alpha_i24"] = [0.002, 0.001724137931034483, 0.0017857142857142859, 0.0014705882352941176, 0.001282051282051282]
+    config["alpha_i23"] = [0.002631578947368421, 0.0014285714285714286, 0.0029411764705882353, 0.0029411764705882353, 0.002272727272727273]
+    # config["gamma_i3"] = [0.05645849085422254, 0.05059842484263016, 0.05641435245414137, 0.06750861079219289, 0.07250426453807762]
+    # config["gamma_i4"] = [0.05412956016264819, 0.03598792261818881, 0.05682107718991267, 0.06997124469396139, 0.045738030687482126]
+    # config["delta_i3"] = [0.035294089749680076, 0.025617013984876785, 0.03493207931373253, 0.054351487928130264, 0.0429594891135747]
+    # config["delta_i4"] = [0.0414777878513146, 0.04288552603679941, 0.03355315111797479, 0.05303689814504788, 0.08517215950989847]
     config["R0_lockdown_scale"] = 0.6
     config["vulnerability_start"] = 0.8
     config["vulnerability_range"] = 0.4
@@ -143,7 +145,7 @@ def run(seed):
         json.dump(config, writer, indent=2)
         writer.close()
     #set-up the multi-SEIRDV model- This calculates all 5 SEIRDV models and lets them   interact with each other using the mobility matrix
-    cmd = 'python3.9 main_multi.py'
+    cmd = 'python3 main_multi.py'
     cmd += f" --config {os.path.join(MODEL_DIR, 'config_start.json')}"
     cmd += f" --config_out {os.path.join(MODEL_DIR, 'config_out_' + str(seed) + '.json')}"
     cmd += f" --data_out {os.path.join(MODEL_DIR, 'run_' + str(seed) + '.csv')}"
@@ -156,7 +158,7 @@ if __name__ == '__main__':
         os.mkdir(MODEL_DIR)
     
     data = []
-    for seed in SEEDS:
+    for seed in tqdm(SEEDS):
         run(seed)
         data.append(combine_subruns([f'{MODEL_DIR}/run_{seed}.csv']))
     

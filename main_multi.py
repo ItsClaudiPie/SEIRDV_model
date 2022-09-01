@@ -4,9 +4,8 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 import numpy as np
 import pandas as pd
 from scipy.stats import gamma as gamma_dist
-import matplotlib.pyplot as plt
 
-from model import SEIRDV, SEIRDV2, MultiDistrictModel
+from model import SEIRDV, MultiDistrictModel
 from run import RunModel
 
 
@@ -31,10 +30,12 @@ if __name__ == "__main__":
     np.random.seed(config['seed'])
 
     # Define parameters for all districts in experiment
-    t_incubation = [gamma_dist(a=config['t_incubation'][0], 
-                scale=config['t_incubation'][1]).rvs()]*len(config['districts'])
+    t_incubation = [gamma_dist(a=config['t_incubation'][0],
+                               scale=config['t_incubation'][1]).rvs()]*len(config['districts'])
     t_infective = [gamma_dist(a=config['t_infective'][0],
-                scale=config['t_infective'][1]).rvs()]*len(config['districts'])
+                              scale=config['t_infective'][1]).rvs()]*len(config['districts'])
+
+    config['Incubation_Period'] = t_incubation
     
     vacc_eff = [config['vacc_eff']]*len(config['districts'])
 
@@ -44,37 +45,38 @@ if __name__ == "__main__":
     vulnerability = vulnerability - vulnerability.min()
     vulnerability = config['vulnerability_range'] * vulnerability / vulnerability.max()
     vulnerability = vulnerability + config['vulnerability_start']
-    print(vulnerability)
 
     # Generate national R0 and adjust for vulnerability
     R0 = np.array([gamma_dist(a=config['R0'][0],
                 scale=config['R0'][1]).rvs()]*len(config['districts']))
     R0 = (R0 * vulnerability * config['R0_lockdown_scale']).tolist()
-    print(R0)
 
     #Other transition rates
     gamma = 1/t_infective[0] #Assumption of days of infectiousness for asypmtomatic and mild cases
     rho = [config['rho']]*len(config['districts'])
     p1 = [config['p1']]*len(config['districts'])
     gamma_i1 = [gamma]*len(config['districts']) #transition rate--  of recovering from asymptomatic
-    alpha_i1 = [config['alpha_i1']]*len(config['districts']) #Assumed transition rate of asymptomatic case to mildy infected
     gamma_i2 = [gamma]*len(config['districts']) #transition rate of mild case to recovered
-    alpha_i2 = config['alpha_i2'] #transition rate of mild case to General Ward (GW) -- data from hospitals parameters.word
-    gamma_i3 = config['gamma_i3'] #transition rate of GW  to recovered -- data from hospitals parameters.word
-    alpha_i3 = config['alpha_i3'] #transition rate  of GW to ICU-- data from hospitals parameters.word
-    delta_i3 = config['delta_i3'] #transition rate of GW cases to dead due to covid - calculated rate using DATCOV19.csv
-    gamma_i4 = config['gamma_i4'] #transition rate of ICU cases to recovered
-    delta_i4 = config['delta_i4'] #transition rate of ICU cases to dead of covid - calculated rate using DATCOV19.csv
+    alpha_i23 = config['alpha_i23'] #transition rate of mild case to General Ward (GW) -- data from hospitals parameters.word
+    gamma_i3 = [gamma_dist(a=config['gamma_i3'][i][0], scale=config['gamma_i3'][i][1]).rvs()
+                for i in range(len(config['districts']))]
+    alpha_i24 = config['alpha_i24'] #transition rate  of GW to ICU-- data from hospitals parameters.word
+    delta_i3 = [gamma_dist(a=config['delta_i3'][i][0], scale=config['delta_i3'][i][1]).rvs()
+                for i in range(len(config['districts']))]
+    gamma_i4 = [gamma_dist(a=config['gamma_i4'][i][0], scale=config['gamma_i4'][i][1]).rvs()
+                for i in range(len(config['districts']))]
+    delta_i4 = [gamma_dist(a=config['delta_i4'][i][0], scale=config['delta_i4'][i][1]).rvs()
+                for i in range(len(config['districts']))]
     mu = [config['mu']]*len(config['districts']) # function, where we can switch on and off the transition rate for the feedback loop of recovered back to susceptible
     
     # Assuming 80% of exp remain in district and only 20% are mobile as mobility matrix doesnt include this method 3?? -- use method 4
     mobility = np.array(config['mobility']) # numbers from mobility.method3.rd
     
     # Define a SEIRDV model for each of the districts defined
-    seir = [SEIRDV2(R0[i], t_infective[i], config['upsilon'][i], vacc_eff[i], rho[i],
-                p1[i], t_incubation[i], gamma_i1[i], gamma_i2[i], gamma_i3[i],
-                gamma_i4[i], alpha_i1[i], alpha_i2[i], alpha_i3[i], delta_i3[i],
-                delta_i4[i], config['N'][i], mu[i]) for i in range(len(config['N']))]
+    seir = [SEIRDV(R0[i], t_infective[i], config['upsilon'][i], vacc_eff[i], rho[i],
+                   p1[i], t_incubation[i], gamma_i1[i], gamma_i2[i], gamma_i3[i],
+                   gamma_i4[i], alpha_i23[i], alpha_i24[i], delta_i3[i],
+                   delta_i4[i], config['N'][i]) for i in range(len(config['N']))]
 
     # Create a MultiDistrict run setup using the mobility matrix
     seir = MultiDistrictModel(seir, mobility, 2)
@@ -82,10 +84,9 @@ if __name__ == "__main__":
     # Run model for 500 days
     seir = RunModel(seir)
     t, xt = seir.run(days=config['days'], vac_0=config['Vaccinated'],
-            exp_0=config['Exposed'], asymp_0=config['Asymptomatic_Cases'],
-            mild_0=config['Mild_Cases'], hosp_0=config['Hospitalised_Cases'],
-            icu_0=config['ICU_Cases'], rec_0=config['Recovered'],
-            die_0=config['Deaths'])
+                     exp_0=config['Exposed'], asymp_0=config['Asymptomatic_Cases'],
+                     mild_0=config['Mild_Cases'], hosp_0=config['Hospitalised_Cases'],
+                     icu_0=config['ICU_Cases'], rec_0=config['Recovered'], die_0=config['Deaths'])
     
     # Reshape output data to format [n_districts, n_compartments, n_days]
     xt = np.concatenate([x.reshape(-1, 1) for x in xt], 1).reshape(len(t), len(config['N']), -1)
