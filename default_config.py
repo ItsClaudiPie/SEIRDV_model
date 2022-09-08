@@ -1,5 +1,5 @@
 CONFIG = {
-            "days": 500,
+            "days": 2500,
             "districts": ["City Of Tshwane Metro", "City Of Johannesburg Metro",
                 "Ekurhuleni Metro", "Sedibeng", "West Rand"],
             "N": [3522325, 5538596, 3781377, 952102, 922640],

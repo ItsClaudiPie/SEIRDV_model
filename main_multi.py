@@ -58,14 +58,14 @@ if __name__ == "__main__":
     gamma_i1 = [gamma]*len(config['districts']) #transition rate--  of recovering from asymptomatic
     gamma_i2 = [gamma]*len(config['districts']) #transition rate of mild case to recovered
     alpha_i23 = config['alpha_i23'] #transition rate of mild case to General Ward (GW) -- data from hospitals parameters.word
-    gamma_i3 = [gamma_dist(a=config['gamma_i3'][i][0], scale=config['gamma_i3'][i][1]).rvs()
+    gamma_i3 = [gamma_dist(a=config['gamma_i3'][i][0], scale=config['gamma_i3'][i][1]).rvs() if config['gamma_i3'][i][0] else 0.0
                 for i in range(len(config['districts']))]
     alpha_i24 = config['alpha_i24'] #transition rate  of GW to ICU-- data from hospitals parameters.word
-    delta_i3 = [gamma_dist(a=config['delta_i3'][i][0], scale=config['delta_i3'][i][1]).rvs()
+    delta_i3 = [gamma_dist(a=config['delta_i3'][i][0], scale=config['delta_i3'][i][1]).rvs() if config['delta_i3'][i][0] else 0.0
                 for i in range(len(config['districts']))]
-    gamma_i4 = [gamma_dist(a=config['gamma_i4'][i][0], scale=config['gamma_i4'][i][1]).rvs()
+    gamma_i4 = [gamma_dist(a=config['gamma_i4'][i][0], scale=config['gamma_i4'][i][1]).rvs() if config['gamma_i4'][i][0] else 0.0
                 for i in range(len(config['districts']))]
-    delta_i4 = [gamma_dist(a=config['delta_i4'][i][0], scale=config['delta_i4'][i][1]).rvs()
+    delta_i4 = [gamma_dist(a=config['delta_i4'][i][0], scale=config['delta_i4'][i][1]).rvs() if config['delta_i4'][i][0] else 0.0
                 for i in range(len(config['districts']))]
     mu = [config['mu']]*len(config['districts']) # function, where we can switch on and off the transition rate for the feedback loop of recovered back to susceptible
     
