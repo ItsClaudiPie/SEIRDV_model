@@ -64,16 +64,14 @@ def get_run_data(predictions, data):
 
 
 if __name__ == '__main__':
-    # parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    # parser.add_argument('--wave', type=int)
-    # args = parser.parse_args()
-    # wave = args.wave
-    wave=1
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--wave', type=int)
+    args = parser.parse_args()
+    wave = args.wave
 
-    path = '/Users/carel17/Projects/SEIRDV_model/wave_1_0'
-
-    true_hosp = f'/Users/carel17/Projects/SEIRDV_model/wave1_hosp.csv'
-    true_cases = f'/Users/carel17/Projects/SEIRDV_model/wave1_mild.csv'
+    path = f'/Users/carel17/Projects/SEIRDV_model/wave_{wave}_0'
+    true_hosp = f'/Users/carel17/Projects/SEIRDV_model/wave{wave}_pred_rep_hosp.csv'
+    true_cases = f'/Users/carel17/Projects/SEIRDV_model/wave{wave}_pred_rep_mild.csv'
 
     data_hosp = pd.read_csv(true_hosp)
     data_cases = pd.read_csv(true_cases)
@@ -94,6 +92,13 @@ if __name__ == '__main__':
         mean[col] = dat.mean(1)
     lower, upper = lower[cols], upper[cols]
 
+    writer = pd.ExcelWriter(f'wave{wave}_pred.xlsx', engine='xlsxwriter')
+    mean.to_excel(writer, sheet_name='mean', index=False)
+    lower.to_excel(writer, sheet_name='lower', index=False)
+    upper.to_excel(writer, sheet_name='upper', index=False)
+    writer.save()
+    quit()
+
     fig, axs = plt.subplots(len(districts))
     for i, dist in enumerate(districts):
         pred = mean[f'{dist}_Mild'].values
@@ -106,7 +111,7 @@ if __name__ == '__main__':
         axs[i].plot(mean['Date'].values, true, linestyle='--')
         axs[i].set_title(dist)
         axs[i].set_xticks([])
-    n_ticks = 35
+    n_ticks = 10
     plt.xticks(range(0, len(mean), n_ticks), mean['Date'][range(0, len(mean), n_ticks)])
     plt.xlabel('Date')
     plt.ylabel('Cases')
