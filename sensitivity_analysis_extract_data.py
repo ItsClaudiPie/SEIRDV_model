@@ -47,6 +47,10 @@ def combine_seeds(path):
     runs = [file for file in os.listdir(path) if 'run_' in file]
     seeds = [int(run.split('_', 1)[1].replace('.csv', '')) for run in runs]
 
+    runs2 = [file for file in os.listdir(path) if 'config_out_' in file]
+    seeds2 = [int(run.split('_', 2)[-1].replace('.json', '')) for run in runs2]
+    seeds = [seed for seed in seeds if seed in seeds2]
+
     stats = []
     for seed in tqdm(seeds):
         config, data = load_data(path, seed)
@@ -59,7 +63,7 @@ def combine_seeds(path):
 
 
 if __name__ == "__main__":
-    path = 'SENS_22'
+    path = '/gpfs/project/niekerk/src/SEIRDV/SENS_23'
     data = combine_seeds(path)
-    path = f'{path}_plots'
+    path = f'{path}_results'
     data.to_csv(os.path.join(path, 'sensitivity_data.csv'), index=False)

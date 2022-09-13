@@ -69,56 +69,47 @@ if __name__ == "__main__":
     
     gamma_i1 = [gamma]*len(config['districts']) #transition rate--  of recovering from asymptomatic
     
-    alpha_i1  = [0.0 / uni_dist(loc = config['alpha_i1'][0],
+    alpha_i1 = [0.0 / uni_dist(loc = config['alpha_i1'][0],
                 scale=config['alpha_i1'][1] - config['alpha_i1'][0]).rvs()]*len(config['districts']) #Assumed transition rate of asymptomatic case to mildy infected
-    
     
     alpha_i2 = [uni_dist(loc = config['alpha_i2'][0],
                 scale=config['alpha_i2'][1] - config['alpha_i2'][0]).rvs()]*len(config['districts']) #transition rate of mild case to General Ward (GW) -- data from hospitals parameters.word
-    prop_i2 = [uni_dist(loc=max(r-0.05, 0), scale=0.1).rvs()
+    prop_i2 = [uni_dist(loc=max(r-0.1, 0), scale=0.2).rvs()
                 for r in [0.119532785, 0.211992489, 0.180688433, 0.036078897, 0.041188556]]
     alpha_i2 = [prop_i2[i] / a for i, a in enumerate(alpha_i2)]
-    #alpha_i2 = [0.002, 0.001724137931034483, 0.0017857142857142859, 0.0014705882352941176, 0.001282051282051282]
 
     gamma_i2 = [gamma]*len(config['districts']) #transition rate of mild case to recovered
     propg_i2 = [1-p for p in prop_i2]
     gamma_i2 = [propg_i2[i] * a for i, a in enumerate(gamma_i2)]
-    gamma_i2 = [gamma]*len(config['districts'])
     
-    alpha_i3  = [uni_dist(loc = config['alpha_i3'][0],
+    alpha_i3 = [uni_dist(loc = config['alpha_i3'][0],
                 scale=config['alpha_i3'][1] - config['alpha_i3'][0]).rvs()]*len(config['districts']) #transition rate  of GW to ICU-- data from hospitals parameters.word
-    prop_i3 = [uni_dist(loc=max(r-0.05, 0), scale=0.1).rvs()
+    prop_i3 = [uni_dist(loc=max(r-0.1, 0), scale=0.2).rvs()
                 for r in [0.162164729, 0.13106766, 0.107955885, 0.102029915, 0.047971245]]
     alpha_i3 = [prop_i3[i] / a for i, a in enumerate(alpha_i3)]
-    #alpha_i3 = [0.002631578947368421, 0.0014285714285714286, 0.0029411764705882353, 0.0029411764705882353, 0.002272727272727273]
     
     delta_i3 = [uni_dist(loc = config['delta_i3'][0],
                 scale=config['delta_i3'][1] - config['delta_i3'][0]).rvs()]*len(config['districts']) #transition rate of GW  to recovered -- data from hospitals parameters.word
-    propd_i3 = [uni_dist(loc=max(r-0.05, 0), scale=0.1).rvs()
+    propd_i3 = [uni_dist(loc=max(r-0.1, 0), scale=0.2).rvs()
                 for r in [0.112431133, 0.133728614, 0.166480677, 0.176878842, 0.174980033]]
     delta_i3 = [propd_i3[i] / a for i, a in enumerate(delta_i3)]
-    #delta_i3 = [0.035294089749680076, 0.025617013984876785, 0.034901111158312556, 0.054351487928130264, 0.0429594891135747]
 
     gamma_i3 = [uni_dist(loc = config['gamma_i3'][0],
                 scale=config['gamma_i3'][1] - config['gamma_i3'][0]).rvs()]*len(config['districts'])#transition rate of GW  to recovered -- data from hospitals parameters.word
     propg_i3 = [1 - p - propd_i3[i] for i, p in enumerate(prop_i3)]
     gamma_i3 = [propg_i3[i] / a for i, a in enumerate(gamma_i3)]
-    #gamma_i3 = [0.05645849085422254, 0.05059842484263016, 0.05646333375560547, 0.06750861079219289, 0.07250426453807762]
    
      #transition rate of ICU cases to recovered
     delta_i4 = [uni_dist(loc = config['delta_i4'][0],
                 scale=config['delta_i4'][1] - config['delta_i4'][0]).rvs()]*len(config['districts'])#transition rate of ICU cases to dead of covid - calculated rate using DATCOV19.csv
-    propd_i4 = [uni_dist(loc=max(r-0.05, 0), scale=0.1).rvs()
+    propd_i4 = [uni_dist(loc=max(r-0.1, 0), scale=0.2).rvs()
                 for r in [0.331732459, 0.336490646, 0.35501092, 0.493019197, 0.507204611]]
     delta_i4 = [propd_i4[i] / a for i, a in enumerate(delta_i4)]
-    #delta_i4 = [0.0414777878513146, 0.04288552603679941, 0.03355315111797479, 0.05303689814504788, 0.08517215950989847] 
 
     gamma_i4 = [uni_dist(loc = config['gamma_i4'][0],
                 scale=config['gamma_i4'][1] - config['gamma_i4'][0]).rvs()]*len(config['districts'])#transition rate of GW  to recovered -- data from hospitals parameters.word
     propg_i4 = [1 - p for p in propd_i4]
-    gamma_i4 = [propg_i4[i] / a for i, a in enumerate(gamma_i4)] 
-    #gamma_i4 = [0.05412956016264819, 0.03598792261818881, 0.056845630996921116, 0.06997124469396139, 0.045738030687482126]
-
+    gamma_i4 = [propg_i4[i] / a for i, a in enumerate(gamma_i4)]
 
     mu = [config['mu']]*len(config['districts']) # function, where we can switch on and off the transition rate for the feedback loop of recovered back to susceptible
     

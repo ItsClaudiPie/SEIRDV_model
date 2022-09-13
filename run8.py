@@ -1,6 +1,7 @@
 import os
 import json
 from copy import deepcopy
+from multiprocessing.pool import ThreadPool as Pool
 
 import numpy as np
 import pandas as pd
@@ -25,10 +26,10 @@ CONFIG = {
             "Recovered": [0, 0, 0, 0, 0],
             "Deaths": [0, 0, 0, 0, 0],
             "t_incubation": [4, 1],
-            "t_infective": [2, 3.5],
-            "vulnerability": [[2.33,23.2],[3.96, 20.2],[8.11,21.1],[6.00,16.7],[5.22,21.6]],
-            "vulnerability_start": 0.7,
-            "vulnerability_range": 0.2,
+            "t_infective": [2.5, 3],
+            "vulnerability": [[2.33, 23.2], [3.96, 20.2],[8.11, 21.1], [6.00, 16.7], [5.22, 21.6]],
+            "vulnerability_start": 0.8,
+            "vulnerability_range": 0.4,
             "R0": [40.5, 0.05],
             "R0_lockdown_scale": 1.0,
             "upsilon": [(0.0019074927736760308, 0.002400923780681382),(0.0024287842628891443, 0.003300102739995358),(0.0015925441351119566, 0.002473906778196628),(0.0016029017637132234, 0.002259682917847771),(0.002030810746938977, 0.0031392696663141728)],
@@ -50,13 +51,11 @@ CONFIG = {
             [0.0101938026, 0.0298346009, 0.0457389387, 0.3696105686, 0.5446220892]]
 }
 
-
-
 #create file in the repo directory to save the results of the test run
-MODEL_DIR = 'SENS_22'
+MODEL_DIR = 'SENS_23'
 
 #Use a number of seeds to perform a MC algorithm 
-SEEDS = range(80000,90000)
+SEEDS = range(80001, 90000)
 
 #Create a function that runs a SEIRDV model for each seed
 def run(seed):
@@ -68,7 +67,7 @@ def run(seed):
         json.dump(config, writer, indent=2)
         writer.close()
     #set-up the multi-SEIRDV model- This calculates all 5 SEIRDV models and lets them interact with each other using the mobility matrix
-    cmd = 'python3.9 sensitivity_analysis_main_multi.py'
+    cmd = 'python3 sensitivity_analysis_main_multi.py'
     cmd += f" --config {os.path.join(MODEL_DIR, 'config_start.json')}"
     cmd += f" --config_out {os.path.join(MODEL_DIR, 'config_out_' + str(seed) + '.json')}"
     cmd += f" --data_out {os.path.join(MODEL_DIR, 'run_' + str(seed) + '.csv')}"
@@ -79,7 +78,6 @@ def run(seed):
 if __name__ == '__main__':
     if not os.path.exists(MODEL_DIR):
         os.mkdir(MODEL_DIR)
-    
-    data = []
-    for seed in tqdm(SEEDS):
+
+    for seed in SEEDS:
         run(seed)

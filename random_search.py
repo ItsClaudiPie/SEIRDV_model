@@ -4,6 +4,7 @@ from sklearn.metrics import r2_score
 import numpy as np
 from tqdm import tqdm
 import json
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 districts = {"City Of Tshwane Metro": 3522325,
             "City Of Johannesburg Metro": 5538596,
@@ -17,6 +18,9 @@ def rate_run(predictions, data):
     config = json.load(reader)
     reader.close()
     predictions = pd.read_csv(predictions)
+
+    if config['Infective_Period'][0] < 1.0:
+        return 99999
 
     pred_cases = []
     true_cases = []
@@ -45,42 +49,43 @@ def rate_run(predictions, data):
     true_peak = true.argmax()
     pred_peak = pred.argmax()
 
-    predictions = predictions.loc[(pred_peak - true_peak):].reset_index()
+    predictions = predictions.loc[np.abs(pred_peak - true_peak):].reset_index()
     predictions = predictions.loc[:len(data)]
 
     r2 = []
     for i, dist in enumerate(districts):
         n = districts[dist]
-        mild = predictions[f'{dist}_Exposed'] * n
-        mild *= (1 - config['p1'][i]) / config['Incubation_Period'][i]
-        data[f'{dist}_Mild'] = mild
         hosp = predictions[f'{dist}_Mild'] * n
         hosp *= config['alpha_i2'][i]
         data[f'{dist}_Hospitalised'] = hosp
 
-        true = data[f'New Cases {dist}'].values
-        pred = data[f'{dist}_Mild'].values
-        pred = pred[true > 10]
-        true = true[true > 10]
-        #r2.append(r2_score(true, pred))
-        r2.append(((true - pred) ** 2).mean())
         true = data[f'{dist} Hospitalised Cases'].values
         pred = data[f'{dist}_Hospitalised'].values
-        pred = pred[true > 10]
-        true = true[true > 10]
         #r2.append(r2_score(true, pred))
-        r2.append(((true - pred) ** 2).mean())
+
+        mse = ((true - pred) ** 2).mean() if len(true) > 0.0 else 0.0
+        # print(mse)
+        r2.append(mse)
 
     return sum(r2) / len(r2)
 
 
 if __name__ == '__main__':
-    path = 'SENS_21'
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--wave', type=int)
+    args = parser.parse_args()
+    wave = args.wave
+
+    path = '/gpfs/project/niekerk/src/SEIRDV/SENS_23'
     runs = [file for file in os.listdir(path) if 'run_' in file]
     seeds = [int(run.split('_', 1)[1].replace('.csv', '')) for run in runs]
 
-    true_hosp = 'Data/wave1_pred_rep_hosp.csv'
-    true_cases = 'Data/wave1_pred_rep_mild.csv'
+    runs2 = [file for file in os.listdir(path) if 'config_out_' in file]
+    seeds2 = [int(run.split('_', 2)[-1].replace('.json', '')) for run in runs2]
+    seeds = [seed for seed in seeds if seed in seeds2]
+
+    true_hosp = f'/gpfs/project/niekerk/src/SEIRDV/wave{wave}_pred_rep_hosp.csv'
+    true_cases = f'/gpfs/project/niekerk/src/SEIRDV/wave{wave}_pred_rep_mild.csv'
 
     data_hosp = pd.read_csv(true_hosp)
     data_cases = pd.read_csv(true_cases)
@@ -95,9 +100,9 @@ if __name__ == '__main__':
     r2 = np.array(r2)
     seeds = np.array(seeds)
 
-    idx = r2.argsort()[::-1]
+    idx = r2.argsort()
     idx = seeds[idx]
 
-    writer = open('best_ids.json', 'w')
+    writer = open(f'/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/best_ids_wave{wave}.json', 'w')
     json.dump(idx.tolist(), writer)
     writer.close()

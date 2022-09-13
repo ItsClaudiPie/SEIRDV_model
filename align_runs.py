@@ -5,6 +5,7 @@ from tqdm import tqdm
 import json
 from copy import deepcopy
 from matplotlib import pyplot as plt
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 districts = {"City Of Tshwane Metro": 3522325,
             "City Of Johannesburg Metro": 5538596,
@@ -46,7 +47,7 @@ def get_run_data(predictions, data):
     true_peak = true.argmax()
     pred_peak = pred.argmax()
 
-    predictions = predictions.loc[(pred_peak - true_peak):].reset_index()
+    predictions = predictions.loc[np.abs(pred_peak - true_peak):].reset_index()
     predictions = predictions.loc[:len(data)]
 
     for i, dist in enumerate(districts):
@@ -57,18 +58,24 @@ def get_run_data(predictions, data):
         hosp = predictions[f'{dist}_Mild'] * n
         hosp *= config['alpha_i2'][i]
         data[f'{dist}_Hospitalised'] = hosp
+        data[f'{dist}_Hospitalised'] = predictions[f'{dist}_Hospitalised'] * n
 
-    return data
+    return data, config
 
 
 if __name__ == '__main__':
-    path = 'SENS_21'
-    reader = open('best_ids.json', 'r')
-    idx = json.load(reader)[::-1]
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--wave', type=int)
+    args = parser.parse_args()
+    wave = args.wave
+
+    path = '/gpfs/project/niekerk/src/SEIRDV/SENS_23'
+    reader = open(f'/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/best_ids_wave{wave}.json', 'r')
+    idx = json.load(reader)
     reader.close()
 
-    true_hosp = 'Data/wave1_pred_rep_hosp.csv'
-    true_cases = 'Data/wave1_pred_rep_mild.csv'
+    true_hosp = f'/gpfs/project/niekerk/src/SEIRDV/wave{wave}_pred_rep_hosp.csv'
+    true_cases = f'/gpfs/project/niekerk/src/SEIRDV/wave{wave}_pred_rep_mild.csv'
 
     data_hosp = pd.read_csv(true_hosp)
     data_cases = pd.read_csv(true_cases)
@@ -77,17 +84,26 @@ if __name__ == '__main__':
     data = data.dropna().reset_index()
 
     predictions = f'{path}/run_{idx[0]}.csv'
-    mean = get_run_data(predictions, deepcopy(data))
+    mean, config = get_run_data(predictions, deepcopy(data))
+    print(mean)
 
-    all = [get_run_data(f'{path}/run_{i}.csv', deepcopy(data)) for i in idx[:100]]
+    writer = open(f'/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/config_best_wave{wave}.json', 'w')
+    json.dump(config, writer, indent=2)
+    writer.close()
+
+    all = [get_run_data(f'{path}/run_{i}.csv', deepcopy(data))[0] for i in idx[:25]]
     std = deepcopy(mean)
     cols = [f'{dist}_Mild' for dist in districts] + [f'{dist}_Hospitalised' for dist in districts]
     for col in cols:
         dat = [dat_[col].values.reshape(-1, 1) for dat_ in all]
         dat = np.concatenate(dat, 1)
-        std[col] = dat.std(1) / np.sqrt(dat.shape[-1])
-        #mean[col] = dat.mean(1)
+        std[col] = dat.std(1)
+        if 'Hospitalised' in col:
+            mean[col] = dat.mean(1)
     std = std[cols]
+
+    mean.to_csv(f"/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/mean_pred_wave{wave}.csv", index=False)
+    std.to_csv(f"/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/pred_std_wave{wave}.csv", index=False)
     
     width = 1.96
     fig, axs = plt.subplots(len(districts))
@@ -102,7 +118,7 @@ if __name__ == '__main__':
         axs[i].plot(mean['Date'].values, pred)
         axs[i].plot(mean['Date'].values, true, linestyle='--')
 
-    plt.show()
+    plt.savefig('/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/mild.png')
 
     fig, axs = plt.subplots(len(districts))
     for i, dist in enumerate(districts):
@@ -116,4 +132,4 @@ if __name__ == '__main__':
         axs[i].plot(mean['Date'].values, pred)
         axs[i].plot(mean['Date'].values, true, linestyle='--')
 
-    plt.show()
+    plt.savefig('/gpfs/project/niekerk/src/SEIRDV/SENS_24_results/hosp.png')
