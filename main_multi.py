@@ -39,6 +39,9 @@ if __name__ == "__main__":
     
     vacc_eff = [config['vacc_eff']]*len(config['districts'])
 
+    vacc_rate = [gamma_dist(a=config['upsilon'][i][0], scale=config['upsilon'][i][1]).rvs() if config['upsilon'][i][0] else 0.0
+                 for i in range(len(config['districts']))]
+
     # Normalise and scale vulnerability index
     vulnerability = np.array(config['vulnerability'])
     vulnerability = (vulnerability - vulnerability.mean()) / vulnerability.std() 
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     mobility = np.array(config['mobility']) # numbers from mobility.method3.rd
     
     # Define a SEIRDV model for each of the districts defined
-    seir = [SEIRDV(R0[i], t_infective[i], config['upsilon'][i], vacc_eff[i], rho[i],
+    seir = [SEIRDV(R0[i], t_infective[i], vacc_rate[i], vacc_eff[i], rho[i],
                    p1[i], t_incubation[i], gamma_i1[i], gamma_i2[i], gamma_i3[i],
                    gamma_i4[i], alpha_i23[i], alpha_i24[i], delta_i3[i],
                    delta_i4[i], config['N'][i]) for i in range(len(config['N']))]

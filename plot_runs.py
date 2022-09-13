@@ -42,8 +42,10 @@ def get_run_data(predictions, data):
     pred_hosp = sum(pred_hosp)
     true_hosp = sum(true_hosp)
 
-    pred = pred_cases + pred_hosp
-    true = true_cases + true_hosp
+    pred = pred_cases + pred_hosp * 10
+    true = true_cases + true_hosp * 10
+    pred = pred_hosp
+    true = true_hosp
 
     true_peak = true.argmax()
     pred_peak = pred.argmax()
