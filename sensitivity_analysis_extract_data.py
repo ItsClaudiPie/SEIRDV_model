@@ -19,10 +19,10 @@ def extract_variables(config):
 
     variables = ['Immunity_start', 'R0_lockdown_scale']
     values = [config[var] for var in variables]
-    dist_vars = ['alpha_i1', "alpha_i2", "gamma_i3", "alpha_i3", "delta_i3", "gamma_i4", "delta_i4",
-                  "gamma_i1", "gamma_i2", 'R0', 'vulnerability', 'vulnerability_normalised',
-                  'upsilon', 'Adjusted_R0', 'Exposed_start', 'mobility_level',
-                  'Incubation_Period', 'Infective_Period', 'p1']
+    dist_vars = ["alpha_i23", "gamma_i3", "alpha_i24", "delta_i3", "gamma_i4", "delta_i4",
+                 "gamma_i1", "gamma_i2", 'R0', 'vulnerability', 'vulnerability_normalised',
+                 'upsilon', 'Adjusted_R0', 'Exposed_start', 'mobility_level',
+                 'Incubation_Period', 'Infective_Period', 'p1']
     for variable in dist_vars:
         variables += [f'{dist}_{variable}' for dist in districts]
         values += [config[variable][i] for i, dist in enumerate(districts)]
@@ -63,7 +63,7 @@ def combine_seeds(path):
 
 
 if __name__ == "__main__":
-    path = '/gpfs/project/niekerk/src/SEIRDV/SENS_23'
+    path = '/gpfs/project/niekerk/src/SEIRDV/SENS_50'
     data = combine_seeds(path)
     path = f'{path}_results'
     data.to_csv(os.path.join(path, 'sensitivity_data.csv'), index=False)
